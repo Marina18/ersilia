@@ -246,9 +246,11 @@ class ModelInspector:
         for n in (1, 10, 100, 1000, 10000):
             result, _timeout = self._run_performance_check(n, timeout)
             timeout = _timeout or timeout
+            print(result)
             if not result.success and "predictions" not in result.details:
                 return result
             details.append(result.details)
+            print(Result(True, " ".join(details)))
         return Result(True, " ".join(details))
 
     def check_no_extra_files(self):
@@ -520,8 +522,9 @@ class ModelInspector:
         cmd = (
             f"ersilia serve {self.model} --disable-local-cache && "
             f"ersilia example -n {n} -f {Options.DEEP_INPUT.value} -m deterministic && "
-            f"ersilia run -i {Options.DEEP_INPUT.value} -o {Options.DEEP_OUTPUT.value}&& ersilia close"
+            f"ersilia -v run -i {Options.DEEP_INPUT.value} -o {Options.DEEP_OUTPUT.value}&& ersilia close"
         )
+
         if timeout:
             return Result(
                 False, f"{n} predictions executed in {-1.00} seconds. \n"
@@ -536,6 +539,7 @@ class ModelInspector:
                 text=True,
                 timeout=TIMEOUT_SECONDS,
             )
+
         except subprocess.TimeoutExpired as e:
             return Result(
             False, f"{n} predictions executed in {-1.00} seconds. \n"

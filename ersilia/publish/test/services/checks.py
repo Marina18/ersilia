@@ -929,7 +929,9 @@ class CheckService:
     def _read_column_header(self, reader):
         return [row[0] for row in reader if row][1:]
     
-    def _find_csv_mismatches(self, csv_out_one, csv_out_two):        
+    def _find_csv_mismatches(self, csv_out_one, csv_out_two):
+        print(csv_out_one)
+        print(csv_out_two)        
         is_online = False
         metadata = {}
         try:
@@ -1002,6 +1004,7 @@ class CheckService:
         half_cut = len(rows1[0]) // 2
         if mismatches:
             if len(mismatches) >= half_cut:
+                print(mismatches)
                 return [(Checks.COLUMN_MISMATCH, f"Column mismatches found (and more): {mismatches[:3]}", str(STATUS_CONFIGS.FAILED))]
         return [(Checks.COLUMN_MISMATCH, "No column mismatches", str(STATUS_CONFIGS.PASSED))]
     
@@ -1108,8 +1111,12 @@ class CheckService:
         return False
 
     def _row_has_missing_values(self, results):
-        values = list(results.values())
-        return any(v is None for v in values) and not all(v is None for v in values)
+        if isinstance(results, list):
+            return any(self._row_has_missing_values(r) for r in results)
+
+        if isinstance(results, dict):
+            values = list(results.values())
+            return any(v is None for v in values) and not all(v is None for v in values)
 
 
     def check_simple_model_async_output(self, serve_model):
@@ -1122,7 +1129,10 @@ class CheckService:
         if output_consistency == "Fixed":
             is_result_valid = self._results_are_valid(resp)
         else:
-            is_result_valid = self._row_has_missing_values(resp)
+
+            has_problem = self._row_has_missing_values(resp)
+            is_result_valid = not has_problem
+
         _completed_status = []
         if not is_result_valid:
             self.logger.error("Model output has content problem")
